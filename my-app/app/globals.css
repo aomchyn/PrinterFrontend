@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+.login-container{
+  @apply min-h-screen flex items-center justify-center bg-gradient-to-br
+  from-green-200 via-blue-600 to-white p-4;
+}
+
+.login-box{
+  @apply bg-gradient-to-t from-black/80 to-black/70 backdrop-blur-lg
+  rounded-2xl p-10 w-full max-w-[420px] shadow-2xl border border-indigo-500/20;
+}
+
+.login-title{
+  @apply bg-gradient-to-r from-green-300 to-blue-200 bg-clip-text
+  text-transparent text-4xl font-bold text-center mb-2;
+}
+
+.login-subtitle{
+  @apply text-gray-400 text-center mb-8 text-xl;
+}
+
+.login-form {
+  @apply flex flex-col gap-6;
+}
+
+.form-group {
+  @apply flex flex-col gap-2;
+}
+
+.form-label{
+  @apply text-pink-200 text-sm font-medium;
+}
+
+.form-input{
+  @apply bg-gradient-to-r from-black/40 to-black/30 text-gray-100
+  rounded-md p-2 border border-indigo-500/30
+  focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/20;
+}
+
+.form-options {
+  @apply flex justify-between items-center;
+}
+
+.login-button{
+  @apply bg-gradient-to-r from-green-200 to-blue-200 text-white
+  border-none rounded-b-lg py-2 text-base font-medium cursor-pointer
+  transition-all duration-300 hover:from-indigo-500 hover:to-blue-200
+  hover:shadow-lg hover:shadow-indigo-500/30
+  active:from-indigo-500 active:to-blue-200;
+
+}
