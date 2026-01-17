@@ -237,18 +237,11 @@ export default function UserManagement(){
                             <label className="block mb-2"> ระดับสิทธิ์การเข้าถึงข้อมูล</label>
                             <select className="form-input" value={role}
                                 onChange={e => setRole(e.target.value)}>
-                                    <option value="employee">Employee</option>
                                     <option value="admin">Admin</option>
                                     <option value="13">13</option>
                                     <option value="zt">zt</option>
                                 </select>
                         </div>
-
-                        <div className="mb-4">
-                            <label className="block mb-4">หน่วยงาน</label>
-                            <select className="form-input" value={''}></select>
-                        </div>
-
                         <div className="flex justify-end gap-2">
                             <button
                             type="button"
