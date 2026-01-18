@@ -27,10 +27,8 @@ export default function Home (){
 
            if (response.data.role == 'admin'){
             router.push('/printer/dashboard');
-           } else if (response.data.role == 'zt'){
-            router.push('/printer/zt');
            }else{
-            router.push('/printer/13');
+            router.push('/printer/people');
            }
       }
 
