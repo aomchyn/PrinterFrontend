@@ -122,39 +122,21 @@ export default function Sidebar(){
          
                <ul className="sidebar-nav-list">
                 <li className="sidebar-nav-item">
-                  <a onClick={() => navigateAndSetCurrentPath('/printer/zt')}
-                   className={isActive('/printer/zt')}>
+                  <a onClick={() => navigateAndSetCurrentPath('/printer/people')}
+                   className={isActive('/printer/people')}>
                     <i className="fas fa-leaf mr-2"></i>
-                       <span>ZT</span>
+                       <span>People</span>
                    </a>
                 </li>
                </ul>
 
-                  <ul className="sidebar-nav-list">
-                <li className="sidebar-nav-item">
-            <a onClick={() => navigateAndSetCurrentPath('/printer/13')}
-                                    className={isActive('/printer/13')}>
-               <i className="fas fa-home mr-2"></i>
-               <span>13 ไร่</span>
-            </a>
-                </li>
-               </ul>
-                <ul className="sidebar-nav-list">
-                <li className="sidebar-nav-item">
-               <a onClick={() => navigateAndSetCurrentPath('/printer/anothor')}
-                                    className={isActive('/printer/anothor')}>
-               <i className="fas fa-institution mr-2"></i>
-               <span>หน่วยงานอื่นๆ</span>
-            </a>
-                </li>
-               </ul>
-                        <ul className="sidebar-nav-list">
+               <ul className="sidebar-nav-list">
                             {role == 'admin' && (
                                  <li className="sidebar-nav-item">
-                                <a onClick={() => navigateAndSetCurrentPath('/printer/user')}
-                                    className={isActive('/printer/user')}>
+                                <a onClick={() => navigateAndSetCurrentPath('/printer/product')}
+                                    className={isActive('/printer/product')}>
                                     <i className="fas fa-user-alt mr-2"></i>
-                                   <span>ผู้ใช้งานระบบ</span>
+                                   <span>Product</span>
                                 </a>
                                  </li>
                             )}
@@ -162,6 +144,19 @@ export default function Sidebar(){
                               
 
                         </ul>
+                        <ul className="sidebar-nav-list">
+                            {role == 'admin' && (
+                                 <li className="sidebar-nav-item">
+                                <a onClick={() => navigateAndSetCurrentPath('/printer/user')}
+                                    className={isActive('/printer/user')}>
+                                    <i className="fas fa-user-alt mr-2"></i>
+                                   <span>Users</span>
+                                </a>
+                                 </li>
+                            )}
+                            </ul>
+
+                         
                    
                   </ul>
             </nav>

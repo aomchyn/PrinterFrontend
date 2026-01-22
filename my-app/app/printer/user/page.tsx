@@ -238,8 +238,7 @@ export default function UserManagement(){
                             <select className="form-input" value={role}
                                 onChange={e => setRole(e.target.value)}>
                                     <option value="admin">Admin</option>
-                                    <option value="13">13</option>
-                                    <option value="zt">zt</option>
+                                    <option value="people">People</option>
                                 </select>
                         </div>
                         <div className="flex justify-end gap-2">
