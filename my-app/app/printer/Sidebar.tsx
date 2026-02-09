@@ -110,7 +110,7 @@ export default function Sidebar(){
             </div>
             <nav>
                 <ul className="sidebar-nav-list">
-                    {role == 'admin' && (
+                    {(
                         <li className="sidebar-nav-item">
                         <a onClick={() => navigateAndSetCurrentPath('/printer/dashboard')}
                            className={isActive('/printer/dashboard')}>
@@ -119,19 +119,9 @@ export default function Sidebar(){
                         </a>
                          </li>
                     )}
-         
-               <ul className="sidebar-nav-list">
-                <li className="sidebar-nav-item">
-                  <a onClick={() => navigateAndSetCurrentPath('/printer/people')}
-                   className={isActive('/printer/people')}>
-                    <i className="fas fa-leaf mr-2"></i>
-                       <span>People</span>
-                   </a>
-                </li>
-               </ul>
 
                <ul className="sidebar-nav-list">
-                            {role == 'admin' && (
+                            { (
                                  <li className="sidebar-nav-item">
                                 <a onClick={() => navigateAndSetCurrentPath('/printer/product')}
                                     className={isActive('/printer/product')}>
@@ -151,6 +141,18 @@ export default function Sidebar(){
                                     className={isActive('/printer/user')}>
                                     <i className="fas fa-user-alt mr-2"></i>
                                    <span>Users</span>
+                                </a>
+                                 </li>
+                            )}
+                            </ul>
+
+                            <ul className="sidebar-nav-list">
+                            { (
+                                 <li className="sidebar-nav-item">
+                                <a onClick={() => navigateAndSetCurrentPath('/printer/order')}
+                                    className={isActive('/printer/oder')}>
+                                    <i className="fas fa-box-open mr-2"></i>
+                                   <span>Orders</span>
                                 </a>
                                  </li>
                             )}

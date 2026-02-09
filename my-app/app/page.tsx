@@ -26,9 +26,9 @@ export default function Home (){
            localStorage.setItem(Config.tokenKey, response.data.token);
 
            if (response.data.role == 'admin'){
-            router.push('/printer/dashboard');
+            router.push('/printer/user');
            }else{
-            router.push('/printer/people');
+            router.push('/printer/product');
            }
       }
 
