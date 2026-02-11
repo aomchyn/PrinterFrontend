@@ -200,6 +200,18 @@ export default function DashboardPage() {
         return `${day}/${month}/${year}, ${hours}:${minutes}`;
     };
 
+    const sortedOrders = [...filteredOrders].sort((a, b) => {
+        const getTimestamp = (order: OrderInterface) => {
+            if (order.createdAt) return new Date(order.createdAt).getTime();
+            if (order.orderDateTime) return new Date(order.orderDateTime).getTime();
+            if (order.orderDate && order.orderTime) 
+                return new Date(`${order.orderDate}T${order.orderTime}`).getTime();
+            if (order.orderDate) return new Date(order.orderDate).getTime();
+            return 0;
+        };
+        return getTimestamp(b) - getTimestamp(a);
+    });
+
     // คำนวณข้อมูลสำหรับกราฟ
     const getChartData = () => {
         const userOrders: { [key: string]: number } = {};
@@ -359,7 +371,7 @@ export default function DashboardPage() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {filteredOrders.map((order) => (
+                        {sortedOrders.map((order) => (
                             <div
                                 key={order.id}
                                 className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow p-6"
