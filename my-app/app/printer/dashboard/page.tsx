@@ -407,7 +407,14 @@ export default function DashboardPage() {
                                             {formatOrderDateTime(order)}
                                         </span>
                                     </div>
-
+                                    
+                                    {/* ✅ เพิ่มตรงนี้: ชื่อผู้สั่ง */}
+<div className="flex justify-between text-sm">
+    <span className="text-gray-600">ผู้สั่ง:</span>
+    <span className="font-semibold text-gray-800">
+        {order.createdBy || 'ไม่ระบุ'}
+    </span>
+</div>
                                     {/* วันที่ผลิต */}
                                     <div className="flex justify-between text-sm">
                                         <span className="text-gray-600">วันที่ผลิต:</span>
