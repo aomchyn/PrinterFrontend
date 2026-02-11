@@ -19,11 +19,40 @@ export default function OrderPage() {
         expiryDate: '',
         quantity: 0,
         notes:'',
+        
     });
 
     const [products, setProducts] = useState<FgcodeInterface[]>([]);
+    const [username, setUsername] = useState('')
     // ดึงข้อมูลสินค้าจาก API
     useEffect(() => {
+          fetchUserInfo();
+          fetchProducts();
+          
+          const today = new Date().toISOString().split('T')[0];
+          setOrderData(prev => ({ ...prev, orderDate:today }));
+    }, []);
+
+        const fetchUserInfo = async () => {
+            try {
+                const token = localStorage.getItem(Config.tokenKey);
+                if (!token) return;
+    
+                const response = await fetch(`${Config.apiUrl}/printer/user/admin-info`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+    
+                if (response.ok) {
+                    const data = await response.json();
+                    setUsername(data.name);
+                }
+            } catch (error) {
+                console.error('Error fetching user info:', error);
+            }
+        };
+
         const fetchProducts = async () => {
             try {
                 const response = await fetch(`${Config.apiUrl}/fgcode`, {
@@ -60,9 +89,6 @@ export default function OrderPage() {
             
             }
         };
-
-        fetchProducts();
-    }, []);
 
     
 
@@ -214,7 +240,8 @@ export default function OrderPage() {
                 orderTime: orderTime,
                 orderDateTime: now.toISOString(),
                 id: Date.now(),
-                createdAt: now.toISOString()
+                createdAt: now.toISOString(),
+                createdBy:username
             };
             
             localStorage.setItem('orders', JSON.stringify([...existingOrders, newOrder]));

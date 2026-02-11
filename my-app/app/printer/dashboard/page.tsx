@@ -6,6 +6,7 @@ import { Config } from '../../Config';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { useRouter } from 'next/navigation';
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export default function DashboardPage() {
     const [orders, setOrders] = useState<OrderInterface[]>([]);
@@ -199,6 +200,27 @@ export default function DashboardPage() {
         return `${day}/${month}/${year}, ${hours}:${minutes}`;
     };
 
+    // คำนวณข้อมูลสำหรับกราฟ
+    const getChartData = () => {
+        const userOrders: { [key: string]: number } = {};
+        
+        orders.forEach(order => {
+            const creator = order.createdBy || 'ไม่ระบุ';
+            userOrders[creator] = (userOrders[creator] || 0) + 1;
+        });
+
+        return Object.entries(userOrders).map(([name, count]) => ({
+            name,
+            count
+        })).sort((a, b) => b.count - a.count);
+    };
+
+    const chartData = getChartData();
+    
+    // สีสำหรับกราฟ Pie
+    const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82ca9d', '#ffc658'];
+
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 p-8">
             <div className="max-w-7xl mx-auto">
@@ -221,6 +243,75 @@ export default function DashboardPage() {
                             )}
                         </div>
                     </div>
+
+                      {/* สถิติรวม */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                        <div className="bg-blue-50 p-6 rounded-xl border-l-4 border-blue-500">
+                            <p className="text-sm text-gray-600 mb-1">คำสั่งทั้งหมด</p>
+                            <p className="text-4xl font-bold text-blue-600">{orders.length}</p>
+                        </div>
+                        <div className="bg-green-50 p-6 rounded-xl border-l-4 border-green-500">
+                            <p className="text-sm text-gray-600 mb-1">จำนวนผู้สั่ง</p>
+                            <p className="text-4xl font-bold text-green-600">{chartData.length}</p>
+                        </div>
+                        <div className="bg-purple-50 p-6 rounded-xl border-l-4 border-purple-500">
+                            <p className="text-sm text-gray-600 mb-1">ผู้สั่งมากที่สุด</p>
+                            <p className="text-2xl font-bold text-purple-600">
+                                {chartData[0]?.name || '-'}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                                ({chartData[0]?.count || 0} คำสั่ง)
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* กราฟ */}
+                    {chartData.length > 0 && (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                            {/* กราฟแท่ง */}
+                            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl">
+                                <h3 className="text-xl font-bold text-gray-800 mb-4">
+                                    📊 จำนวนคำสั่งของแต่ละคน
+                                </h3>
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <BarChart data={chartData}>
+                                        <CartesianGrid strokeDasharray="3 3" />
+                                        <XAxis dataKey="name" />
+                                        <YAxis />
+                                        <Tooltip />
+                                        <Legend />
+                                        <Bar dataKey="count" fill="#3b82f6" name="จำนวนคำสั่ง" />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+
+                            {/* กราฟวงกลม */}
+                            <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-6 rounded-xl">
+                                <h3 className="text-xl font-bold text-gray-800 mb-4">
+                                    🥧 สัดส่วนการสั่ง
+                                </h3>
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <PieChart>
+                                        <Pie
+                                            data={chartData}
+                                            cx="50%"
+                                            cy="50%"
+                                            labelLine={false}
+                                            label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                                            outerRadius={80}
+                                            fill="#8884d8"
+                                            dataKey="count"
+                                        >
+                                            {chartData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    )}
 
                     {/* ช่องค้นหา */}
                     <div className="mb-6">
