@@ -130,12 +130,6 @@ export default function DashboardPage() {
                         <h1 className="text-4xl font-bold text-gray-800">
                             📊 Dashboard คำสั่งฉลากสินค้า
                         </h1>
-                        <a
-                            href="/order"
-                            className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-600 hover:to-indigo-700 transform transition hover:scale-105 shadow-lg"
-                        >
-                            + สร้างคำสั่งฉลากสินค้าใหม่
-                        </a>
                     </div>
 
                     {/* สรุปข้อมูล */}
@@ -150,65 +144,8 @@ export default function DashboardPage() {
                                 {orders.filter(o => new Date(o.orderDate).toDateString() === new Date().toDateString()).length}
                             </p>
                         </div>
-                        <div className="bg-orange-50 p-4 rounded-lg border-l-4 border-orange-500">
-                            <p className="text-sm text-gray-600">ใกล้หมดอายุ (≤30 วัน)</p>
-                            <p className="text-3xl font-bold text-orange-600">
-                                {orders.filter(o => {
-                                    const status = checkExpiryStatus(o.expiryDate);
-                                    return status.days <= 30 && status.days >= 0;
-                                }).length}
-                            </p>
-                        </div>
-                        <div className="bg-red-50 p-4 rounded-lg border-l-4 border-red-500">
-                            <p className="text-sm text-gray-600">หมดอายุแล้ว</p>
-                            <p className="text-3xl font-bold text-red-600">
-                                {orders.filter(o => checkExpiryStatus(o.expiryDate).days < 0).length}
-                            </p>
-                        </div>
                     </div>
-
-                    {/* ตัวกรอง */}
-                    <div className="flex gap-3 mb-4">
-                        <button
-                            onClick={() => setFilter('all')}
-                            className={`px-4 py-2 rounded-lg font-semibold transition ${
-                                filter === 'all'
-                                    ? 'bg-blue-500 text-white'
-                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                            }`}
-                        >
-                            ทั้งหมด
-                        </button>
-                        <button
-                            onClick={() => setFilter('today')}
-                            className={`px-4 py-2 rounded-lg font-semibold transition ${
-                                filter === 'today'
-                                    ? 'bg-blue-500 text-white'
-                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                            }`}
-                        >
-                            วันนี้
-                        </button>
-                        <button
-                            onClick={() => setFilter('thisWeek')}
-                            className={`px-4 py-2 rounded-lg font-semibold transition ${
-                                filter === 'thisWeek'
-                                    ? 'bg-blue-500 text-white'
-                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                            }`}
-                        >
-                            7 วันที่แล้ว
-                        </button>
-                        {orders.length > 0 && (
-                            <button
-                                onClick={clearAllOrders}
-                                className="ml-auto px-4 py-2 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition"
-                            >
-                                🗑️ ลบทั้งหมด
-                            </button>
-                        )}
-                    </div>
-                </div>
+               </div>
 
                 {/* รายการคำสั่งซื้อ */}
                 {filteredOrders.length === 0 ? (
@@ -217,15 +154,8 @@ export default function DashboardPage() {
                         <h2 className="text-2xl font-semibold text-gray-700 mb-2">
                             ไม่มีคำสั่ง
                         </h2>
-                        <p className="text-gray-500 mb-6">
-                            เริ่มสร้างคำสั่งฉลากแรกของคุณ
-                        </p>
-                        <a
-                            href="/order"
-                            className="inline-block bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold py-3 px-8 rounded-lg hover:from-blue-600 hover:to-indigo-700 transform transition hover:scale-105"
-                        >
-                            + สร้างคำสั่งฉลากสินค้า
-                        </a>
+                        
+                      
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -289,19 +219,7 @@ export default function DashboardPage() {
                                             <span className="font-semibold text-green-600">{order.quantity} ชิ้น</span>
                                         </div>
                                     </div>
-
-                                    {/* สถานะอายุ */}
-                                    <div className={`mt-4 p-3 rounded-lg ${expiryStatus.color}`}>
-                                        <div className="flex justify-between items-center">
-                                            <span className="font-semibold">สถานะ: {expiryStatus.status}</span>
-                                            <span className="text-sm">
-                                                {expiryStatus.days >= 0 
-                                                    ? `เหลืออีก ${expiryStatus.days} วัน` 
-                                                    : `หมดอายุไปแล้ว ${Math.abs(expiryStatus.days)} วัน`}
-                                            </span>
-                                        </div>
                                     </div>
-                                </div>
                             );
                         })}
                     </div>

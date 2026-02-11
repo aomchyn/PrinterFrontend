@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { OrderInterface } from '../printer/interface/OrderInterface';
 import { FgcodeInterface } from '../printer/interface/FgcodeInterface';
 import { Config } from "../../Config";
+import Swal from 'sweetalert2';
 
 export default function OrderPage() {
     const [orderData, setOrderData] = useState<OrderInterface>({
@@ -57,14 +58,8 @@ export default function OrderPage() {
                 console.error('เกิดข้อผิดพลาดในการดึงข้อมูลสินค้า:', err);
                 setError(`ไม่สามารถดึงข้อมูลสินค้าได้: ${err.message}`);
                 
-                const fallbackProducts: FgcodeInterface[] = [
-                    { id: 'P001', name: 'นม UHT รสจืด', exp: '6 months' },
-                    { id: 'P002', name: 'นม UHT รสช็อกโกแลต', exp: '6 months' },
-                    { id: 'P003', name: 'น้ำผลไม้รวม', exp: '12 months' },
-                    { id: 'P004', name: 'น้ำแร่', exp: '24 months' },
-                    { id: 'P005', name: 'ขนมปัง', exp: '30 days' },
-                ];
-                setProducts(fallbackProducts);
+                
+            
             } finally {
                 setLoading(false);
             }
@@ -208,7 +203,11 @@ export default function OrderPage() {
             
             localStorage.setItem('orders', JSON.stringify([...existingOrders, newOrder]));
 
-            alert('บันทึกคำสั่งซื้อสำเร็จ!');
+            Swal.fire({
+                icon:"success",
+                title:"Success",
+                text:"บันทึกคำสั่งเรียบร้อย"
+            })
             
             setOrderData({
                 orderDate: new Date().toISOString().split('T')[0],
@@ -234,31 +233,7 @@ export default function OrderPage() {
                     📦 ฟอร์มสั่งฉลากสินค้า
                 </h1>
 
-                {loading ? (
-                    <div className="text-center py-6">
-                        <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-3"></div>
-                        <p className="text-gray-600">กำลังโหลดข้อมูลสินค้า...</p>
-                        <p className="text-sm text-gray-500 mt-1">API Endpoint: {Config.apiUrl}/fgcode</p>
-                    </div>
-                ) : (
-                    <>
-                        {error && (
-                            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg mb-6">
-                                <div className="flex items-start">
-                                    <div className="flex-shrink-0">
-                                        <svg className="h-5 w-5 text-yellow-500" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                        </svg>
-                                    </div>
-                                    <div className="ml-3">
-                                        <h3 className="text-sm font-medium text-yellow-800">{error}</h3>
-                                        <div className="mt-1 text-sm text-yellow-700">
-                                            <p>กำลังใช้ข้อมูลสินค้าจากฐานข้อมูลชั่วคราว</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                
 
                         <form onSubmit={handleSubmit} className="space-y-6">
                             {/* วันที่สั่งฉลากสินค้า */}
@@ -283,7 +258,7 @@ export default function OrderPage() {
                                     type="text"
                                     value={orderData.lotNumber}
                                     onChange={(e) => setOrderData(prev => ({ ...prev, lotNumber: e.target.value }))}
-                                    placeholder="เช่น LOT2025001"
+                                    placeholder='ป้อนเลขลอต'
                                     required
                                     className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
                                 />
@@ -299,7 +274,7 @@ export default function OrderPage() {
                                     list="product-list"
                                     value={orderData.productId}
                                     onChange={handleProductCodeChange}
-                                    placeholder="กรอกรหัสสินค้า"
+                                    placeholder="ป้อนรหัสสินค้า"
                                     required
                                     className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
                                 />
@@ -310,12 +285,7 @@ export default function OrderPage() {
                                         </option>
                                     ))}
                                 </datalist>
-                                {products.length > 0 && (
-                                    <p className="text-xs text-gray-500 mt-2">
-                                        <span className="font-medium">รหัสสินค้าที่มี:</span> {products.slice(0, 5).map(p => p.id).join(', ')}
-                                        {products.length > 5 && ` ...และอีก ${products.length - 5} รายการ`}
-                                    </p>
-                                )}
+                                
                             </div>
 
                             {/* ชื่อสินค้า (แสดงอัตโนมัติ) */}
@@ -390,7 +360,7 @@ export default function OrderPage() {
                                         ...prev, 
                                         quantity: Math.max(1, parseInt(e.target.value) || 1) 
                                     }))}
-                                    placeholder="กรอกจำนวน"
+                                    placeholder="กรอกจำนวนที่ต้องการสั่ง"
                                     min="1"
                                     required
                                     className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
@@ -415,8 +385,7 @@ export default function OrderPage() {
                         </form>
 
                        
-                    </>
-                )}
+                
             </div>
         </div>
     );
