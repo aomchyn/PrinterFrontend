@@ -6,6 +6,7 @@ import { OrderInterface } from '../printer/interface/OrderInterface';
 export default function DashboardPage() {
     const [orders, setOrders] = useState<OrderInterface[]>([]);
     const [filter, setFilter] = useState<'all' | 'today' | 'thisWeek'>('all');
+    const [searchTerm, setSearchTerm] = useState('');
 
     // โหลดข้อมูลจาก localStorage
     useEffect(() => {
@@ -56,20 +57,7 @@ export default function DashboardPage() {
         setOrders([]);
     };
 
-    // ตรวจสอบวันหมดอายุ
-    const checkExpiryStatus = (expiryDate: string) => {
-        const expiry = new Date(expiryDate);
-        const today = new Date();
-        const daysUntilExpiry = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-
-        if (daysUntilExpiry < 0) {
-            return { status: 'หมดอายุแล้ว', color: 'text-red-600 bg-red-50', days: daysUntilExpiry };
-        } else if (daysUntilExpiry <= 30) {
-            return { status: 'ใกล้หมดอายุ', color: 'text-orange-600 bg-orange-50', days: daysUntilExpiry };
-        } else {
-            return { status: 'ปกติ', color: 'text-green-600 bg-green-50', days: daysUntilExpiry };
-        }
-    };
+    
 
     // ฟังก์ชันแปลงวันที่เป็นรูปแบบ พ.ศ.
     const formatToThaiDate = (dateString: string) => {
@@ -116,9 +104,31 @@ export default function DashboardPage() {
         );
     };
 
-    // ฟังก์ชันสำหรับแสดงวันที่สั่งซื้อ (แบบเดิม)
-    const formatOrderDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('th-TH');
+    // ฟังก์ชันสำหรับแสดงวันที่และเวลาที่สั่งซื้อ (ใหม่)
+    const formatOrderDateTime = (order: OrderInterface) => {
+        let date: Date;
+        
+        if (order.orderDateTime) {
+            date = new Date(order.orderDateTime);
+        } else if (order.orderDate && order.orderTime) {
+            // สร้าง date object จาก orderDate และ orderTime
+            // orderDate เป็นรูปแบบ YYYY-MM-DD, orderTime เป็นรูปแบบ HH:mm
+            date = new Date(order.orderDate + 'T' + order.orderTime);
+        } else if (order.orderDate) {
+            date = new Date(order.orderDate);
+        } else {
+            return 'ไม่ระบุ';
+        }
+        
+        if (isNaN(date.getTime())) return 'ไม่ระบุ';
+        
+        const day = date.getDate();
+        const month = date.getMonth() + 1;
+        const year = date.getFullYear() + 543; // แปลงเป็น พ.ศ.
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        
+        return `${day}/${month}/${year}, ${hours}:${minutes}`;
     };
 
     return (
@@ -131,7 +141,7 @@ export default function DashboardPage() {
                             📊 Dashboard คำสั่งฉลากสินค้า
                         </h1>
                     </div>
-
+                    
                     {/* สรุปข้อมูล */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                         <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
@@ -147,83 +157,79 @@ export default function DashboardPage() {
                     </div>
                </div>
 
-                {/* รายการคำสั่งซื้อ */}
-                {filteredOrders.length === 0 ? (
-                    <div className="bg-white rounded-2xl shadow-xl p-12 text-center">
-                        <div className="text-6xl mb-4">📦</div>
-                        <h2 className="text-2xl font-semibold text-gray-700 mb-2">
-                            ไม่มีคำสั่ง
-                        </h2>
-                        
-                      
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {filteredOrders.map((order) => {
-                            const expiryStatus = checkExpiryStatus(order.expiryDate);
-                            return (
-                                <div
-                                    key={order.id}
-                                    className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow p-6"
-                                >
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div>
-                                            <h3 className="text-xl font-bold text-gray-800 mb-1">
-                                                {order.productName}
-                                            </h3>
-                                            <p className="text-sm text-gray-700">
-                                                รหัส: {order.productId} | ลอต: {order.lotNumber}
-                                            </p>
-                                        </div>
-                                        <button
-                                            onClick={() => deleteOrder(order.id)}
-                                            className="text-red-500 hover:text-red-700 transition"
-                                        >
-                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                            </svg>
-                                        </button>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {filteredOrders.map((order) => {
+                        return (
+                            <div
+                                key={order.id}
+                                className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow p-6"
+                            >
+                                <div className="flex justify-between items-start mb-4">
+                                    <div>
+                                        <h3 className="text-xl font-bold text-gray-800 mb-1">
+                                            {order.productName}
+                                        </h3>
+                                        <p className="text-sm text-gray-700">
+                                            รหัส: {order.productId} | ลอต: {order.lotNumber}
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={() => deleteOrder(order.id)}
+                                        className="text-red-500 hover:text-red-700 transition"
+                                    >
+                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                <div className="space-y-3">
+                                    {/* วันที่สั่งซื้อ - แสดงทั้งวันที่และเวลา */}
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-600">วันที่สั่ง:</span>
+                                        <span className="font-semibold text-gray-800 text-right">
+                                            {formatOrderDateTime(order)}
+                                        </span>
                                     </div>
 
-                                    <div className="space-y-3">
-                                        {/* วันที่สั่งซื้อ */}
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-gray-600">วันที่สั่ง:</span>
-                                            <span className="font-semibold text-gray-800 text-right">
-                                                {formatOrderDate(order.orderDate)}
+                                    {/* วันที่ผลิต - แสดงทั้ง พ.ศ. และ ค.ศ. */}
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-600">วันที่ผลิต:</span>
+                                        <div className="font-semibold text-gray-800 text-right">
+                                            {formatDateDisplay(order.productionDate)}
+                                        </div>
+                                    </div>
+
+                                    {/* วันหมดอายุ - แสดงทั้ง พ.ศ. และ ค.ศ. */}
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-600">วันหมดอายุ:</span>
+                                        <div className="font-semibold text-red-600 text-right">
+                                            {formatDateDisplay(order.expiryDate)}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-600">อายุผลิตภัณฑ์:</span>
+                                        <span className="font-semibold text-blue-600">{order.productExp}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-600">จำนวน:</span>
+                                        <span className="font-semibold text-green-600">{order.quantity} ชิ้น</span>
+                                    </div>
+                                    {/* หมายเหตุ */}
+                                    {order.notes && (
+                                        <div className='flex justify-between text-sm'>
+                                            <span className='text-gray-600'>หมายเหตุ</span>
+                                            <span className='font-semibold text-black'>
+                                                {order.notes}
                                             </span>
                                         </div>
-
-                                        {/* วันที่ผลิต - แสดงทั้ง พ.ศ. และ ค.ศ. */}
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-gray-600">วันที่ผลิต:</span>
-                                            <div className="font-semibold text-gray-800 text-right">
-                                                {formatDateDisplay(order.productionDate)}
-                                            </div>
-                                        </div>
-
-                                        {/* วันหมดอายุ - แสดงทั้ง พ.ศ. และ ค.ศ. */}
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-gray-600">วันหมดอายุ:</span>
-                                            <div className="font-semibold text-red-600 text-right">
-                                                {formatDateDisplay(order.expiryDate)}
-                                            </div>
-                                        </div>
-
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-gray-600">อายุผลิตภัณฑ์:</span>
-                                            <span className="font-semibold text-blue-600">{order.productExp}</span>
-                                        </div>
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-gray-600">จำนวน:</span>
-                                            <span className="font-semibold text-green-600">{order.quantity} ชิ้น</span>
-                                        </div>
-                                    </div>
-                                    </div>
-                            );
-                        })}
-                    </div>
-                )}
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
         </div>
     );

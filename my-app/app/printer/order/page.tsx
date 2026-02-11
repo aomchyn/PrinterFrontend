@@ -9,6 +9,8 @@ import Swal from 'sweetalert2';
 export default function OrderPage() {
     const [orderData, setOrderData] = useState<OrderInterface>({
         orderDate: '',
+        orderTime:'',
+        orderDateTime:'',
         lotNumber: '',
         productId: '',
         productName: '',
@@ -16,19 +18,14 @@ export default function OrderPage() {
         productionDate: '',
         expiryDate: '',
         quantity: 0,
+        notes:'',
     });
 
     const [products, setProducts] = useState<FgcodeInterface[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string>('');
-
     // ดึงข้อมูลสินค้าจาก API
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                setLoading(true);
-                console.log(`กำลังดึงข้อมูลจาก: ${Config.apiUrl}/fgcode`);
-                
                 const response = await fetch(`${Config.apiUrl}/fgcode`, {
                     headers: {
                         'Accept': 'application/json',
@@ -51,28 +48,23 @@ export default function OrderPage() {
                 }
                 
                 const data = await response.json();
-                console.log('ข้อมูลสินค้าที่ได้รับ:', data);
+                
                 setProducts(data);
-                setError('');
+                
             } catch (err: any) {
                 console.error('เกิดข้อผิดพลาดในการดึงข้อมูลสินค้า:', err);
-                setError(`ไม่สามารถดึงข้อมูลสินค้าได้: ${err.message}`);
+               
                 
                 
             
-            } finally {
-                setLoading(false);
+            
             }
         };
 
         fetchProducts();
     }, []);
 
-    // ตั้งค่าวันที่สั่งสินค้าเป็นวันที่ปัจจุบันอัตโนมัติ
-    useEffect(() => {
-        const today = new Date().toISOString().split('T')[0];
-        setOrderData(prev => ({ ...prev, orderDate: today }));
-    }, []);
+    
 
     // คำนวณวันหมดอายุจากวันที่ผลิตและอายุผลิตภัณฑ์ - แก้ไขให้รองรับรูปแบบต่างๆ
     const calculateExpiryDate = (manufactureDate: string, shelfLife: string): string => {
@@ -181,12 +173,28 @@ export default function OrderPage() {
         }));
     };
 
+    // ตั้งค่าวันที่สั่งสินค้าเป็นวันที่ปัจจุบันอัตโนมัติ
+    useEffect(() => {
+        const now = new Date();
+        const today = now.toISOString().split('T')[0]; // วันที่
+        const currentTime = now.toTimeString().split(' ')[0].substring(0, 5); // เวลา
+        
+        setOrderData(prev => ({
+            ...prev, 
+            orderDate: today,
+            orderTime: currentTime,
+            orderDateTime: now.toISOString()
+        }));
+    }, []);
+
+    // ... keep other functions the same ...
+
     // ส่งข้อมูลไปยัง dashboard
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         try {
-            const requiredFields = ['lotNumber', 'productId', 'productionDate', 'quantity'];
+            const requiredFields = ['lotNumber', 'productId', 'productionDate', 'quantity', 'notes'];
             const missingFields = requiredFields.filter(field => !orderData[field as keyof OrderInterface]);
             
             if (missingFields.length > 0) {
@@ -194,23 +202,38 @@ export default function OrderPage() {
                 return;
             }
 
+            // สร้างวันที่และเวลาปัจจุบัน
+            const now = new Date();
+            const orderDate = now.toISOString().split('T')[0];
+            const orderTime = now.toTimeString().split(' ')[0].substring(0, 5);
+
             const existingOrders = JSON.parse(localStorage.getItem('orders') || '[]');
             const newOrder = { 
-                ...orderData, 
+                ...orderData,
+                orderDate: orderDate,
+                orderTime: orderTime,
+                orderDateTime: now.toISOString(),
                 id: Date.now(),
-                createdAt: new Date().toISOString()
+                createdAt: now.toISOString()
             };
             
             localStorage.setItem('orders', JSON.stringify([...existingOrders, newOrder]));
 
             Swal.fire({
-                icon:"success",
-                title:"Success",
-                text:"บันทึกคำสั่งเรียบร้อย"
-            })
+                icon: "success",
+                title: "บันทึกสำเร็จ",
+                text: `บันทึกคำสั่งเรียบร้อย\nวันที่: ${orderDate}\nเวลา: ${orderTime}`
+            });
+
+            // รีเซ็ตฟอร์ม
+            const resetNow = new Date();
+            const resetDate = resetNow.toISOString().split('T')[0];
+            const resetTime = resetNow.toTimeString().split(' ')[0].substring(0, 5);
             
             setOrderData({
-                orderDate: new Date().toISOString().split('T')[0],
+                orderDate: resetDate,
+                orderTime: resetTime,
+                orderDateTime: resetNow.toISOString(),
                 lotNumber: '',
                 productId: '',
                 productName: '',
@@ -218,6 +241,7 @@ export default function OrderPage() {
                 productionDate: '',
                 expiryDate: '',
                 quantity: 0,
+                notes: '',
             });
 
         } catch (error) {
@@ -226,28 +250,44 @@ export default function OrderPage() {
         }
     };
 
+    // ฟังก์ชันแปลงเป็นรูปแบบไทย
+    const formatThaiDateTime = () => {
+        if (!orderData.orderDate || !orderData.orderTime) return 'กำลังโหลด...';
+        
+        try {
+            const [year, month, day] = orderData.orderDate.split('-');
+            const [hours, minutes] = orderData.orderTime.split(':');
+            
+            // แปลง ค.ศ. เป็น พ.ศ.
+            const thaiYear = parseInt(year) + 543;
+            
+            return `${day}/${month}/${thaiYear}, ${hours}:${minutes}`;
+        } catch (error) {
+            return `${orderData.orderDate}, ${orderData.orderTime}`;
+        }
+    };
+
+
+      
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 md:p-8">
             <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-6 md:p-8">
                 <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-8 text-center text-blue-700">
                     📦 ฟอร์มสั่งฉลากสินค้า
                 </h1>
-
-                
-
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            {/* วันที่สั่งฉลากสินค้า */}
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    วันที่สั่งฉลากสินค้า
-                                </label>
-                                <input
-                                    type="date"
-                                    value={orderData.orderDate}
-                                    readOnly
-                                    className="w-full px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300"
-                                />
-                            </div>
+                  <form onSubmit={handleSubmit} className="space-y-6">
+             
+                    {/* วันที่และเวลาสั่ง */}
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            วันที่และเวลาสั่ง
+                        </label>
+                        <div className="w-full px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg text-gray-800 font-medium">
+                            {formatThaiDateTime()}
+                        </div>
+                    </div>
+                     
 
                             {/* เลขลอตสินค้า */}
                             <div>
@@ -328,7 +368,6 @@ export default function OrderPage() {
                                     value={orderData.productionDate}
                                     onChange={handleProductionDateChange}
                                     required
-                                    max={new Date().toISOString().split('T')[0]}
                                     className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
                                 />
                             </div>
@@ -365,6 +404,19 @@ export default function OrderPage() {
                                     required
                                     className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
                                 />
+                            </div>
+
+                            {/* หมายเหตุ */}
+                            <div>
+                                <label className='block text-sm font-semibold text-gray-700 mb-2'>
+                                    หมายเหตุ
+                                </label>
+                                <textarea
+                                value={orderData.notes || ''}
+                                onChange={(e) => setOrderData (prev => ({...prev, notes: e.target.value}))}
+                                placeholder='กรอกรายละเอียดเพิ่มเติม(หากไม่มีให้ใส่ -)'
+                                rows={3}
+                                className='w-full px-4 py-3 bg-white border border-gray-300 rounded-b-lg text-gray-800 focus:outline-none focus: ring-blue-500 focus:border-blue-500 transition duration-200 resize-none'/>
                             </div>
 
                             {/* ปุ่มส่งข้อมูล */}
