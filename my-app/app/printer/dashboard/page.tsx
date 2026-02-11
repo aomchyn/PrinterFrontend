@@ -237,7 +237,7 @@ export default function DashboardPage() {
         <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 p-8">
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
-                <div className="bg-white rounded-2xl shadow-xl p-8 mb-6">
+                <div className="bg-white rounded-2xl shadow-xl p-4 md:p-8">
                     <div className="flex justify-between items-center mb-6">
                         <div>
                             <h1 className="text-4xl font-bold text-gray-800">
@@ -370,21 +370,26 @@ export default function DashboardPage() {
                         )}
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {sortedOrders.map((order) => (
-                            <div
-                                key={order.id}
-                                className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow p-6"
-                            >
-                                <div className="flex justify-between items-start mb-4">
-                                    <div>
-                                        <h3 className="text-xl font-bold text-gray-800 mb-1">
-                                            {order.productName}
-                                        </h3>
-                                        <p className="text-sm text-gray-700">
-                                            รหัส: {order.productId} | ลอต: {order.lotNumber}
-                                        </p>
-                                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:p-8">
+                        {sortedOrders.map((order, index) => (   // ← เพิ่ม parameter ที่ 2: index
+    <div key={order.id} className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow p-6 md:p-8">
+        {/* ส่วนหัว */}
+        <div className="flex justify-between items-start mb-4">
+            <div>
+                <div className="pr-4">
+                    <h3 className="text-xl font-bold text-gray-800 mb-1">
+                        {order.productName}
+                    </h3>
+                    {index === 0 && (
+                        <span className="bg-yellow-200 text-yellow-800 text-xs px-2 py-1 rounded-full font-semibold whitespace-nowrap">
+                            🔥 ล่าสุด
+                        </span>
+                    )}
+                </div>
+                <p className="text-sm text-gray-700">
+                    รหัส: {order.productId} | ลอต: {order.lotNumber}
+                </p>
+            </div>
                                     
                                     {/* ปุ่มจัดการ - แสดงเฉพาะ Admin */}
                                     {role === 'admin' && (
@@ -471,7 +476,7 @@ export default function DashboardPage() {
                 {/* Modal แก้ไขข้อมูล */}
                 {editingOrder && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="bg-white rounded-2xl shadow-2xl p-4 md:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                             <h2 className="text-2xl font-bold text-black mb-6">✏️ แก้ไขคำสั่งซื้อ</h2>
                             
                             <div className="space-y-4">
