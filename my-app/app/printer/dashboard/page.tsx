@@ -142,7 +142,7 @@ const filteredOrders = orders.filter(order => {
 
                     {/* ← เพิ่มช่องค้นหาตรงนี้ */}
     <div className="mb-6">
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
+        <label className="block text-xl font-semibold text-gray-700 mb-2">
             🔍 ค้นหาเลขลอตสินค้า
         </label>
         <input
@@ -166,19 +166,7 @@ const filteredOrders = orders.filter(order => {
     </div>
 
 
-                    {/* สรุปข้อมูล */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                        <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
-                            <p className="text-sm text-gray-600">คำสั่งทั้งหมด</p>
-                            <p className="text-3xl font-bold text-blue-600">{orders.length}</p>
-                        </div>
-                        <div className="bg-green-50 p-4 rounded-lg border-l-4 border-green-500">
-                            <p className="text-sm text-gray-600">คำสั่งวันนี้</p>
-                            <p className="text-3xl font-bold text-green-600">
-                                {orders.filter(o => new Date(o.orderDate).toDateString() === new Date().toDateString()).length}
-                            </p>
-                        </div>
-                    </div>
+                    
                </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
