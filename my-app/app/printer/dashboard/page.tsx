@@ -21,24 +21,29 @@ export default function DashboardPage() {
     };
 
     // กรองข้อมูลตามเงื่อนไข
-    const filteredOrders = orders.filter(order => {
-        if (filter === 'all') return true;
-        
+const filteredOrders = orders.filter(order => {
+    // กรองตามช่วงเวลา (all, today, thisWeek)
+    let matchesFilter = true;
+    
+    if (filter !== 'all') {
         const orderDate = new Date(order.orderDate);
         const today = new Date();
         
         if (filter === 'today') {
-            return orderDate.toDateString() === today.toDateString();
-        }
-        
-        if (filter === 'thisWeek') {
+            matchesFilter = orderDate.toDateString() === today.toDateString();
+        } else if (filter === 'thisWeek') {
             const weekAgo = new Date();
             weekAgo.setDate(weekAgo.getDate() - 7);
-            return orderDate >= weekAgo;
+            matchesFilter = orderDate >= weekAgo;
         }
-        
-        return true;
-    });
+    }
+    
+    // กรองตามเลขลอต (ถ้ามีการค้นหา)
+    const matchesSearch = searchTerm.trim() === '' || 
+                         order.lotNumber.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    return matchesFilter && matchesSearch;
+});
 
     // ลบคำสั่งซื้อ
     const deleteOrder = (id: number | undefined) => {
@@ -141,7 +146,33 @@ export default function DashboardPage() {
                             📊 Dashboard คำสั่งฉลากสินค้า
                         </h1>
                     </div>
-                    
+
+                    {/* ← เพิ่มช่องค้นหาตรงนี้ */}
+    <div className="mb-6">
+        <label className="block text-sm font-semibold text-gray-700 mb-2">
+            🔍 ค้นหาเลขลอตสินค้า
+        </label>
+        <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="กรอกเลขลอตที่ต้องการค้นหา..."
+            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200"
+        />
+        {searchTerm && (
+            <div className="mt-2 text-sm text-gray-600">
+                พบ {filteredOrders.length} รายการที่ตรงกับ "{searchTerm}"
+                <button
+                    onClick={() => setSearchTerm('')}
+                    className="ml-2 text-red-500 hover:text-red-700 font-semibold"
+                >
+                    ✕ ล้างการค้นหา
+                </button>
+            </div>
+        )}
+    </div>
+
+
                     {/* สรุปข้อมูล */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                         <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
