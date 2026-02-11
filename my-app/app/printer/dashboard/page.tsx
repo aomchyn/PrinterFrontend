@@ -54,14 +54,7 @@ const filteredOrders = orders.filter(order => {
         setOrders(updatedOrders);
     };
 
-    // ล้างข้อมูลทั้งหมด
-    const clearAllOrders = () => {
-        if (!confirm('คุณต้องการลบคำสั่งซื้อทั้งหมดหรือไม่?')) return;
-        
-        localStorage.removeItem('orders');
-        setOrders([]);
-    };
-
+    
     
 
     // ฟังก์ชันแปลงวันที่เป็นรูปแบบ พ.ศ.
