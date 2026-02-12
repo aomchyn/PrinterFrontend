@@ -28,7 +28,7 @@ export default function OrderPage() {
     useEffect(() => {
           fetchUserInfo();
           fetchProducts();
-          
+
           const today = new Date().toISOString().split('T')[0];
           setOrderData(prev => ({ ...prev, orderDate:today }));
     }, []);
@@ -62,8 +62,6 @@ export default function OrderPage() {
                     },
                     mode: 'cors',
                 });
-                
-                console.log('สถานะการตอบกลับ:', response.status);
                 
                 if (!response.ok) {
                     let errorMsg = `HTTP error! status: ${response.status}`;
@@ -129,9 +127,10 @@ export default function OrderPage() {
             }
             
             if (isNaN(numValue)) {
-                console.error('ค่าใน shelfLife ไม่ใช่ตัวเลข:', trimmedShelfLife);
+                 trimmedShelfLife;
                 return '';
             }
+
 
             const newDate = new Date(mfgDate);
             
@@ -218,48 +217,71 @@ export default function OrderPage() {
     // ส่งข้อมูลไปยัง dashboard
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
+    
         try {
-            const requiredFields = ['lotNumber', 'productId', 'productionDate', 'quantity', 'notes'];
+            // ตรวจสอบ required fields
+            const requiredFields = ['lotNumber', 'productId', 'productionDate', 'quantity'];
             const missingFields = requiredFields.filter(field => !orderData[field as keyof OrderInterface]);
             
             if (missingFields.length > 0) {
                 alert(`กรุณากรอกข้อมูลให้ครบถ้วน: ${missingFields.join(', ')}`);
                 return;
             }
-
-            // สร้างวันที่และเวลาปัจจุบัน
-            const now = new Date();
-            const orderDate = now.toISOString().split('T')[0];
-            const orderTime = now.toTimeString().split(' ')[0].substring(0, 5);
-
-            const existingOrders = JSON.parse(localStorage.getItem('orders') || '[]');
-            const newOrder = { 
-                ...orderData,
-                orderDate: orderDate,
-                orderTime: orderTime,
-                orderDateTime: now.toISOString(),
-                id: Date.now(),
-                createdAt: now.toISOString(),
-                createdBy:username
+    
+            const token = localStorage.getItem(Config.tokenKey);
+            if (!token) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'ไม่พบ Token',
+                    text: 'กรุณาเข้าสู่ระบบอีกครั้ง'
+                });
+                return;
+            }
+    
+            // เตรียมข้อมูลที่จะส่งไป backend
+            const orderPayload = {
+                orderDate: orderData.orderDate,               // YYYY-MM-DD
+                lotNumber: orderData.lotNumber,
+                productId: orderData.productId,
+                productName: orderData.productName,
+                productExp: orderData.productExp,
+                productionDate: orderData.productionDate,     // YYYY-MM-DD
+                expiryDate: orderData.expiryDate,             // YYYY-MM-DD
+                quantity: orderData.quantity,
+                notes: orderData.notes || '-',
+                createdBy: username,                          // ชื่อผู้ login
+                isVerified: false,
+                verifiedBy: null,
+                verifiedAt: null
             };
-            
-            localStorage.setItem('orders', JSON.stringify([...existingOrders, newOrder]));
-
-            Swal.fire({
-                icon: "success",
-                title: "บันทึกสำเร็จ",
-                text: `บันทึกคำสั่งเรียบร้อย\nวันที่: ${orderDate}\nเวลา: ${orderTime}`
+    
+            const response = await fetch(`${Config.apiUrl}/printer/order/create`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(orderPayload)
             });
-
-            // รีเซ็ตฟอร์ม
+    
+            const result = await response.json();
+    
+            if (!response.ok) {
+                throw new Error(result.message || 'ไม่สามารถบันทึกคำสั่งซื้อได้');
+            }
+    
+            // ✅ บันทึกสำเร็จ
+            Swal.fire({
+                icon: 'success',
+                title: 'บันทึกสำเร็จ',
+                text: `บันทึกคำสั่งซื้อลงฐานข้อมูลแล้ว\nเลขที่อ้างอิง: ${result.id}`
+            });
+    
+            // ✅ ล้างฟอร์ม (วันที่/เวลาปัจจุบัน)
             const resetNow = new Date();
-            const resetDate = resetNow.toISOString().split('T')[0];
-            const resetTime = resetNow.toTimeString().split(' ')[0].substring(0, 5);
-            
             setOrderData({
-                orderDate: resetDate,
-                orderTime: resetTime,
+                orderDate: resetNow.toISOString().split('T')[0],
+                orderTime: resetNow.toTimeString().split(' ')[0].substring(0, 5),
                 orderDateTime: resetNow.toISOString(),
                 lotNumber: '',
                 productId: '',
@@ -270,10 +292,14 @@ export default function OrderPage() {
                 quantity: 0,
                 notes: '',
             });
-
-        } catch (error) {
-            console.error('เกิดข้อผิดพลาดในการบันทึก:', error);
-            alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง');
+    
+        } catch (error: any) {
+            console.error('Error saving order:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'เกิดข้อผิดพลาด',
+                text: error.message || 'กรุณาลองใหม่อีกครั้ง'
+            });
         }
     };
 

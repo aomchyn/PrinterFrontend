@@ -36,33 +36,44 @@ export default function FgcodeManagement(){
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-
-        // ✅ ตรวจสอบข้อมูลก่อนส่ง
+        e.preventDefault();
+    
         if (!id.trim() || !name.trim() || !exp.trim()) {
             Swal.fire({
                 icon: 'warning',
                 title: 'ข้อมูลไม่ครบ',
                 text: 'กรุณากรอกข้อมูลให้ครบทุกช่อง'
-            })
-            return
+            });
+            return;
         }
-
+    
         try {
-            const url = editingFgcode
-                ? `${Config.apiUrl}/fgcode/update-profile`
-                : `${Config.apiUrl}/fgcode/create`
-
-            const payload = {
-                id: editingFgcode?.id || id,
-                name: name,
-                exp: exp
+            let response;
+    
+            if (editingFgcode) {
+                // ✅ แก้ไข: ใช้ PUT /fgcode/{id} ส่งแค่ name, exp
+                response = await axios.put(
+                    `${Config.apiUrl}/fgcode/${editingFgcode.id}`,
+                    { name, exp },  // ไม่ต้องส่ง id ใน body
+                    {
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                );
+            } else {
+                // ✅ เพิ่มใหม่: ใช้ POST /fgcode/create ส่ง id, name, exp
+                response = await axios.post(
+                    `${Config.apiUrl}/fgcode/create`,
+                    { id, name, exp },
+                    {
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                );
             }
-
-            console.log('Sending payload:', payload) // ✅ Debug
-
-            const response = await axios.post(url, payload)
-
+    
             if (response.status === 200 || response.status === 201) {
                 Swal.fire({
                     icon: 'success',
@@ -70,41 +81,44 @@ export default function FgcodeManagement(){
                     text: `${editingFgcode ? 'แก้ไข' : 'สร้าง'}รหัสสินค้าสำเร็จ`,
                     timer: 1500,
                     showConfirmButton: false
-                })
-
-                setShowModal(false)
-                setEditingFgcode(null)
-                setId('')
-                setName('')
-                setExp('')
-
-                fetchFgcodes()
+                });
+    
+                // ปิด Modal และรีเซ็ตฟอร์ม
+                setShowModal(false);
+                setEditingFgcode(null);
+                setId('');
+                setName('');
+                setExp('');
+    
+                // โหลดข้อมูลใหม่
+                fetchFgcodes();
             }
-
+    
         } catch (error: any) {
-            
-            const errorMessage = error.response?.data?.message || 
-                                error.response?.data?.error ||
-                                error.message ||
-                                `ไม่สามารถ${editingFgcode ? 'แก้ไข' : 'สร้าง'}รหัสสินค้าได้`
-            
+            // ✅ ดึง error message จาก response ของ backend
+            const errorMessage = error.response?.data?.message ||
+                                 error.response?.data?.error ||
+                                 error.message ||
+                                 `ไม่สามารถ${editingFgcode ? 'แก้ไข' : 'สร้าง'}รหัสสินค้าได้`;
+    
             Swal.fire({
-                icon: "error",
-                title: "ผิดพลาด",
+                icon: 'error',
+                title: 'ผิดพลาด',
                 text: errorMessage
-            })
+            });
         }
-    }
+    };
 
     const handleEdit = (fgcode: FgcodeInterface) => {
-        setEditingFgcode(fgcode)
-        setId(fgcode.id || '')
-        setName(fgcode.name || '')
-        setExp(fgcode.exp || '')
-        setShowModal(true)
-    }
+        setEditingFgcode(fgcode);
+        setId(fgcode.id || '');
+        setName(fgcode.name || '');
+        setExp(fgcode.exp || '');
+        setShowModal(true);
+    };
+    
 
-    // ✅ เพิ่มฟังก์ชันลบ (ถ้าต้องการ)
+    // ฟังก์ชันลบ (ถ้าต้องการ)
     const handleDelete = async (id: string) => {
         const result = await Swal.fire({
             title: 'ยืนยันการลบ',
@@ -146,55 +160,79 @@ export default function FgcodeManagement(){
             </h1>
             <div className="flex justify-between items-center mb-6">
                 <button
-                    className="button-add"
                     onClick={() => {
                         setEditingFgcode(null)
                         setId('')
                         setName('')
                         setExp('')
                         setShowModal(true)
-                    }}>
-                    <i className="fas fa-plus mr-2"></i> เพิ่มรายการสินค้า
+                    }}
+                    className="bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-5 rounded-lg transition duration-200 flex items-center shadow-md"
+                     >
+                     <i className="fas fa-plus mr-2"></i> เพิ่มรายการสินค้า
                 </button>
             </div>
 
-            <div className="bg-white shadow-md rounded-lg overflow-hidden">
-                <table className="table">
-                    <thead>
+            <div className="bg-white shadow-md rounded-lg overflow-x-auto border border-gray-200">
+                <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gradient-to-r from-gray-100 to-gray-50">
                         <tr>
-                            <th>รหัสสินค้า</th>
-                            <th className="w-[120px]">รายการสินค้า</th>
-                            <th className="w-[120px]">อายุผลิตภัณฑ์</th>
-                            <th className="text-right" style={{width: '200px'}}>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">รหัสสินค้า</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">รายการสินค้า</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">อายุผลิตภัณฑ์</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                                 จัดการ
                             </th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="bg-white divide-y divide-gray-200">
                         {fgcodes.length === 0 ? (
                             <tr>
-                                <td colSpan={4} className="text-center py-4">
+                                <td colSpan={4} className="px-6 py-10 text-center text-gray-500">
+
+                                <div className="flex flex-col items-center">
+                            <svg className="w-12 h-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M20 12H4M12 4v16" />
+                            </svg>
+                            <span>ไม่มีข้อมูลสินค้า กรุณาเพิ่มรายการ</span>
+                        </div>
                                     ไม่มีข้อมูล
                                 </td>
                             </tr>
                         ) : (
-                            fgcodes.map(fgcode => (
-                                <tr key={fgcode.id}>
-                                    <td>{fgcode.id}</td>
-                                    <td>{fgcode.name}</td>
-                                    <td>{fgcode.exp}</td>
-                                    <td className="text-right">
-                                        <button 
-                                            className="table-action-btn table-edit-btn mr-2"
+                            fgcodes.map((fgcode, index) => (
+                                <tr 
+                                    key={fgcode.id}
+                                    className={`
+                                        ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} 
+                                        hover:bg-blue-50/30 transition-colors duration-150
+                                    `}
+                                >
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                        {fgcode.id}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                        {fgcode.name}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                        <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-semibold">
+                                            {fgcode.exp}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <button
                                             onClick={() => handleEdit(fgcode)}
-                                            title="แก้ไข">
-                                            <i className="fas fa-edit"></i>
+                                            className="text-indigo-600 hover:text-indigo-900 p-2 rounded-full hover:bg-indigo-50 transition mr-1"
+                                            title="แก้ไข"
+                                        >
+                                            <i className="fas fa-edit w-4 h-4"></i>
                                         </button>
-                                        <button 
-                                            className="table-action-btn table-delete-btn"
+                                        <button
                                             onClick={() => handleDelete(fgcode.id)}
-                                            title="ลบ">
-                                            <i className="fas fa-trash"></i>
+                                            className="text-red-600 hover:text-red-900 p-2 rounded-full hover:bg-red-50 transition"
+                                            title="ลบ"
+                                        >
+                                            <i className="fas fa-trash w-4 h-4"></i>
                                         </button>
                                     </td>
                                 </tr>
@@ -202,8 +240,8 @@ export default function FgcodeManagement(){
                         )}
                     </tbody>
                 </table>
-            </div> 
-
+            </div>
+            
             {showModal && (
                 <Modal
                     id="fgcode-modal"

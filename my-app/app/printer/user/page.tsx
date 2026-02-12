@@ -20,7 +20,7 @@ export default function UserManagement(){
     const [email, setEmail] = useState('');
     const [name , setName] = useState('');
     const [password, setPassword] = useState('');
-    const [role, setRole] = useState('employee');
+    const [role, setRole] = useState('user');
     
     useEffect(()=> {
         fetchUsers()
@@ -42,9 +42,27 @@ export default function UserManagement(){
         }
     }
 
+    const isDuplicateName = (name: string, excludeUserId?: number): boolean => {
+        return users.some(user => 
+            user.name.toLowerCase() === name.toLowerCase() && 
+            user.id !== excludeUserId
+        );
+    };
+
     const handleSubmit = async (e:React.FormEvent) => {
         e.preventDefault()
 
+        // ✅ ตรวจสอบชื่อซ้ำ (เฉพาะการสร้างใหม่)
+    if (!editingUser) {
+        if (isDuplicateName(name)) {
+            Swal.fire({
+                icon: 'error',
+                title: 'ชื่อผู้ใช้ซ้ำ',
+                text: 'มีชื่อผู้ใช้นี้ในระบบแล้ว กรุณาใช้ชื่ออื่น'
+            });
+            return;
+        }
+    }
         try {
             const url = editingUser
             ?`${Config.apiUrl}/printer/user/admin-update-profile`
@@ -77,7 +95,7 @@ export default function UserManagement(){
                 setEmail('')
                 setName('')
                 setPassword('')
-                setRole('')
+                setRole('user')
 
                 fetchUsers()
             }
@@ -135,7 +153,7 @@ export default function UserManagement(){
         setName(user.name)
         setPassword('')
         setShowModal(true)
-        setRole(user.role ?? 'employee');
+        setRole(user.role ?? '');
     }
 
     return (
@@ -151,7 +169,7 @@ export default function UserManagement(){
                     setEmail('')
                     setName('')
                     setPassword('')
-                    setRole('')
+                    setRole('user')
                     setShowModal(true)
                 }} >
              <i className="fas fa-plus mr-2"></i> เพิ่มบัญชีผู้ใช้งาน
@@ -238,7 +256,7 @@ export default function UserManagement(){
                             <select className="form-input" value={role}
                                 onChange={e => setRole(e.target.value)}>
                                     <option value="admin">Admin</option>
-                                    <option value="people">People</option>
+                                    <option value="user">User</option>
                                 </select>
                         </div>
                         <div className="flex justify-end gap-2">

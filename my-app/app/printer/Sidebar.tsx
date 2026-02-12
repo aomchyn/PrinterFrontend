@@ -87,7 +87,7 @@ export default function Sidebar(){
     }
 
     return (
-     <>
+     
      
      <div className="sidebar">
         <div className="sidebar-container">
@@ -100,8 +100,8 @@ export default function Sidebar(){
                     <i className="fas fa-user mr-3"></i>
                     {name} ({role})
                 </div>
-               <div className="flex gap-1 m-3 justify-center"> {role === 'admin' && 
-               ( <Link href="/printer/user/edit" className="btn-edit"> <i className="fas fa-edit mr-3"></i> Edit </Link> )}
+               <div className="flex gap-1 m-3 justify-center"> {role === 'admin' 
+               }
                     <button className="btn-logout" onClick={handleLogout}>
                         <i className="fas fa-sign-out-alt mr-2"></i>
                         Logout
@@ -150,7 +150,7 @@ export default function Sidebar(){
                             { (
                                  <li className="sidebar-nav-item">
                                 <a onClick={() => navigateAndSetCurrentPath('/printer/order')}
-                                    className={isActive('/printer/oder')}>
+                                    className={isActive('/printer/order')}>
                                     <i className="fas fa-box-open mr-2"></i>
                                    <span>Orders</span>
                                 </a>
@@ -168,7 +168,7 @@ export default function Sidebar(){
      
      
      
-     </>
+     
     );
     
 }

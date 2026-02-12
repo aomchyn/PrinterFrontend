@@ -20,7 +20,10 @@ export default function DashboardPage() {
     useEffect(() => {
         fetchUserInfo();
         loadOrders();
-        const interval = setInterval(loadOrders, 5000);
+
+        const interval = setInterval(() => {
+            loadOrders();
+        }, 5000);
         return () => clearInterval(interval);
     }, []);
 
@@ -51,11 +54,30 @@ export default function DashboardPage() {
         }
     };
 
-    const loadOrders = () => {
-        const savedOrders = JSON.parse(localStorage.getItem('orders') || '[]');
-        setOrders(savedOrders);
+    const loadOrders = async () => {
+        try {
+            const token = localStorage.getItem(Config.tokenKey);
+            if (!token) {
+                router.push('/');
+                return;
+            }
+    
+            const response = await axios.get(`${Config.apiUrl}/printer/order`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+    
+            if (response.status === 200) {
+                setOrders(response.data);
+            }
+        } catch (error) {
+            console.error('Error loading orders:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'โหลดข้อมูลไม่สำเร็จ',
+                text: 'กรุณาลองใหม่อีกครั้ง'
+            });
+        }
     };
-
     // กรองข้อมูลตามเลขลอต
     const filteredOrders = orders.filter(order => {
         const matchesSearch = searchTerm.trim() === '' || 
@@ -64,19 +86,14 @@ export default function DashboardPage() {
     });
 
     // ลบคำสั่งซื้อ - เฉพาะ Admin
-    const deleteOrder = (id: number | undefined) => {
+    const deleteOrder = async (id: number | undefined) => {
         if (role !== 'admin') {
-            Swal.fire({
-                icon: 'error',
-                title: 'ไม่มีสิทธิ์',
-                text: 'เฉพาะ Admin เท่านั้นที่สามารถลบข้อมูลได้'
-            });
+            Swal.fire({ icon: 'error', title: 'ไม่มีสิทธิ์', text: 'เฉพาะ Admin เท่านั้น' });
             return;
         }
-
         if (!id) return;
-
-        Swal.fire({
+    
+        const result = await Swal.fire({
             title: 'ยืนยันการลบ?',
             text: 'คุณต้องการลบคำสั่งซื้อนี้หรือไม่?',
             icon: 'warning',
@@ -85,55 +102,86 @@ export default function DashboardPage() {
             cancelButtonColor: '#3085d6',
             confirmButtonText: 'ใช่, ลบเลย!',
             cancelButtonText: 'ยกเลิก'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                const updatedOrders = orders.filter(order => order.id !== id);
-                localStorage.setItem('orders', JSON.stringify(updatedOrders));
-                setOrders(updatedOrders);
-                
+        });
+    
+        if (result.isConfirmed) {
+            try {
+                const token = localStorage.getItem(Config.tokenKey);
+                await axios.delete(`${Config.apiUrl}/printer/order/${id}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+    
+                // อัปเดต state ทันที (optimistic update)
+                setOrders(prev => prev.filter(order => order.id !== id));
+    
                 Swal.fire({
                     icon: 'success',
                     title: 'ลบสำเร็จ!',
-                    text: 'คำสั่งซื้อถูกลบแล้ว',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            } catch (error) {
+                console.error('Error deleting order:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'ลบไม่สำเร็จ',
+                    text: 'กรุณาลองใหม่อีกครั้ง'
+                });
+            }
+        }
+    };
+
+    // แก้ไขคำสั่งซื้อ - เฉพาะ Admin
+    const saveEdit = async () => {
+        if (!editingOrder) return;
+    
+        try {
+            const token = localStorage.getItem(Config.tokenKey);
+            
+            // ลบฟิลด์ที่ frontend ใช้แต่ backend ไม่ต้องการ
+            const { orderTime, orderDateTime, ...orderToSend } = editingOrder;
+    
+            const response = await axios.put(
+                `${Config.apiUrl}/printer/order/${editingOrder.id}`,
+                orderToSend,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+    
+            if (response.status === 200) {
+                // อัปเดต state ด้วยข้อมูลที่ backend ส่งกลับมา
+                setOrders(prev => prev.map(order =>
+                    order.id === editingOrder.id ? response.data : order
+                ));
+                setEditingOrder(null);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'บันทึกสำเร็จ',
                     timer: 1500,
                     showConfirmButton: false
                 });
             }
-        });
+        } catch (error) {
+            console.error('Error updating order:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'แก้ไขไม่สำเร็จ',
+                text: 'กรุณาลองใหม่อีกครั้ง'
+            });
+        }
     };
 
     // แก้ไขคำสั่งซื้อ - เฉพาะ Admin
-    const startEdit = (order: OrderInterface) => {
-        if (role !== 'admin') {
-            Swal.fire({
-                icon: 'error',
-                title: 'ไม่มีสิทธิ์',
-                text: 'เฉพาะ Admin เท่านั้นที่สามารถแก้ไขข้อมูลได้'
-            });
-            return;
-        }
-        setEditingOrder({ ...order });
-    };
-
-    const saveEdit = () => {
-        if (!editingOrder) return;
-
-        const updatedOrders = orders.map(order => 
-            order.id === editingOrder.id ? editingOrder : order
-        );
-        
-        localStorage.setItem('orders', JSON.stringify(updatedOrders));
-        setOrders(updatedOrders);
-        setEditingOrder(null);
-        
+const startEdit = (order: OrderInterface) => {
+    if (role !== 'admin') {
         Swal.fire({
-            icon: 'success',
-            title: 'บันทึกสำเร็จ',
-            timer: 1500,
-            showConfirmButton: false
+            icon: 'error',
+            title: 'ไม่มีสิทธิ์',
+            text: 'เฉพาะ Admin เท่านั้นที่สามารถแก้ไขข้อมูลได้'
         });
-    };
-
+        return;
+    }
+    setEditingOrder({ ...order });
+};
     // ฟังก์ชันแปลงวันที่เป็นรูปแบบ พ.ศ.
     const formatToThaiDate = (dateString: string) => {
         if (!dateString) return '';
@@ -147,6 +195,36 @@ export default function DashboardPage() {
             return dateString;
         }
     };
+
+    // แปลง ISO string → "dd/mm/yyyy, HH:MM" ตามเวลาไทย
+    // ✅ ใหม่ - ถูกต้อง ใช้ regex ตรวจ timezone จริงๆ
+const formatThaiDateTimeFromISO = (isoString?: string | null): string => {
+    if (!isoString) return 'ไม่ระบุ';
+    try {
+        // ตรวจสอบว่ามี timezone อยู่แล้วหรือยัง (Z หรือ +HH:MM ท้าย string)
+        const hasTimezone = isoString.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(isoString);
+        const normalized = hasTimezone ? isoString : isoString + '+07:00';
+
+        const date = new Date(normalized);
+        if (isNaN(date.getTime())) return isoString;
+
+        const thaiDate = date.toLocaleDateString('th-TH', {
+            timeZone: 'Asia/Bangkok',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+        });
+        const thaiTime = date.toLocaleTimeString('th-TH', {
+            timeZone: 'Asia/Bangkok',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+        });
+        return `${thaiDate}, ${thaiTime}`;
+    } catch {
+        return isoString;
+    }
+};
 
     // ฟังก์ชันแปลงวันที่เป็นรูปแบบ ค.ศ.
     const formatToChristianDate = (dateString: string) => {
@@ -175,43 +253,24 @@ export default function DashboardPage() {
         );
     };
 
-    // ฟังก์ชันสำหรับแสดงวันที่และเวลาที่สั่งซื้อ
-    const formatOrderDateTime = (order: OrderInterface) => {
-        let date: Date;
-        
-        if (order.orderDateTime) {
-            date = new Date(order.orderDateTime);
-        } else if (order.orderDate && order.orderTime) {
-            date = new Date(order.orderDate + 'T' + order.orderTime);
-        } else if (order.orderDate) {
-            date = new Date(order.orderDate);
-        } else {
-            return 'ไม่ระบุ';
-        }
-        
-        if (isNaN(date.getTime())) return 'ไม่ระบุ';
-        
-        const day = date.getDate();
-        const month = date.getMonth() + 1;
-        const year = date.getFullYear() + 543;
-        const hours = date.getHours().toString().padStart(2, '0');
-        const minutes = date.getMinutes().toString().padStart(2, '0');
-        
-        return `${day}/${month}/${year}, ${hours}:${minutes}`;
-    };
-
-    const sortedOrders = [...filteredOrders].sort((a, b) => {
-        const getTimestamp = (order: OrderInterface) => {
-            if (order.createdAt) return new Date(order.createdAt).getTime();
-            if (order.orderDateTime) return new Date(order.orderDateTime).getTime();
-            if (order.orderDate && order.orderTime) 
-                return new Date(`${order.orderDate}T${order.orderTime}`).getTime();
-            if (order.orderDate) return new Date(order.orderDate).getTime();
-            return 0;
-        };
-        return getTimestamp(b) - getTimestamp(a);
-    });
-
+    // ฟังก์ชันสำหรับแสดงวันที่และเวลาที่สั่งซื้อ (แก้ไขใหม่)
+const formatOrderDateTime = (order: OrderInterface) => {
+    // ลำดับ: 1. createdAt (จาก DB) 2. orderDateTime (จาก FE) 3. orderDate+orderTime 4. orderDate
+    if (order.createdAt) {
+        return formatThaiDateTimeFromISO(order.createdAt);
+    }
+    if (order.orderDateTime) {
+        return formatThaiDateTimeFromISO(order.orderDateTime);
+    }
+    if (order.orderDate && order.orderTime) {
+        // รวมวันที่+เวลา และระบุ timezone +07:00 เพื่อให้คำนวณถูกต้อง
+        return formatThaiDateTimeFromISO(`${order.orderDate}T${order.orderTime}:00+07:00`);
+    }
+    if (order.orderDate) {
+        return formatThaiDateTimeFromISO(`${order.orderDate}T00:00:00+07:00`);
+    }
+    return 'ไม่ระบุ';
+};
     // คำนวณข้อมูลสำหรับกราฟ
     const getChartData = () => {
         const userOrders: { [key: string]: number } = {};
@@ -231,6 +290,144 @@ export default function DashboardPage() {
     
     // สีสำหรับกราฟ Pie
     const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82ca9d', '#ffc658'];
+
+    const verifyOrder = async (order: OrderInterface) => {
+        if (role !== 'admin') {
+            Swal.fire({ icon: 'error', title: 'ไม่มีสิทธิ์', text: 'เฉพาะ Admin เท่านั้น' });
+            return;
+        }
+    
+        const result = await Swal.fire({
+            title: 'ยืนยันการตรวจสอบ',
+            text: `คุณต้องการยืนยันว่าได้ตรวจสอบคำสั่งซื้อนี้แล้วหรือไม่?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#10b981',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: '✓ ยืนยันการตรวจสอบ',
+            cancelButtonText: 'ยกเลิก'
+        });
+    
+        if (result.isConfirmed) {
+            try {
+                const token = localStorage.getItem(Config.tokenKey);
+    
+                const updatedOrder = {
+                    ...order,
+                    isVerified: true,
+                    verifiedBy: userName,
+                    // ← ลบ verifiedAt: now.toISOString() ออก
+                    // ให้ backend set เวลาเอง
+                };
+    
+                const { orderTime, orderDateTime, verifiedAt, ...orderToSend } = updatedOrder; // ← เพิ่ม verifiedAt ใน destructure
+    
+                const response = await axios.put(
+                    `${Config.apiUrl}/printer/order/${order.id}`,
+                    orderToSend,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+    
+                if (response.status === 200) {
+                    setOrders(prev => prev.map(o =>
+                        o.id === order.id ? response.data : o
+                    ));
+    
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'ตรวจสอบสำเร็จ!',
+                        html: `ผู้ตรวจสอบ: <strong>${userName}</strong>`,
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                }
+            } catch (error) {
+                console.error('Error verifying order:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'ตรวจสอบไม่สำเร็จ',
+                    text: 'กรุณาลองใหม่อีกครั้ง'
+                });
+            }
+        }
+    };
+
+    // ← เพิ่มฟังก์ชันนี้: ยกเลิกการตรวจสอบ
+    const unverifyOrder = async (order: OrderInterface) => {
+        if (role !== 'admin') {
+            Swal.fire({ icon: 'error', title: 'ไม่มีสิทธิ์', text: 'เฉพาะ Admin เท่านั้น' });
+            return;
+        }
+    
+        const result = await Swal.fire({
+            title: 'ยกเลิกการตรวจสอบ?',
+            text: 'คุณต้องการยกเลิกการตรวจสอบคำสั่งซื้อนี้หรือไม่?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'ใช่, ยกเลิก',
+            cancelButtonText: 'ปิด'
+        });
+    
+        if (result.isConfirmed) {
+            try {
+                const token = localStorage.getItem(Config.tokenKey);
+    
+                const updatedOrder = {
+                    ...order,
+                    isVerified: false,
+                    verifiedBy: null,
+                    verifiedAt: null
+                };
+    
+                const { orderTime, orderDateTime, ...orderToSend } = updatedOrder;
+    
+                const response = await axios.put(
+                    `${Config.apiUrl}/printer/order/${order.id}`,
+                    orderToSend,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+    
+                if (response.status === 200) {
+                    setOrders(prev => prev.map(o =>
+                        o.id === order.id ? response.data : o
+                    ));
+    
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'ยกเลิกสำเร็จ!',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                }
+            } catch (error) {
+                console.error('Error unverifying order:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'ยกเลิกไม่สำเร็จ',
+                    text: 'กรุณาลองใหม่อีกครั้ง'
+                });
+            }
+        }
+    };
+
+    //ฟังก์ชัน: แสดงวันที่ตรวจสอบ
+    const formatVerifiedDate = (dateString?: string | null) => {
+        return formatThaiDateTimeFromISO(dateString);
+    };
+
+    const sortedOrders = [...filteredOrders].sort((a, b) => {
+        const getTimestamp = (order: OrderInterface) => {
+            if (order.createdAt) return new Date(order.createdAt).getTime();
+            if (order.orderDateTime) return new Date(order.orderDateTime).getTime();
+            if (order.orderDate && order.orderTime) 
+                return new Date(`${order.orderDate}T${order.orderTime}`).getTime();
+            if (order.orderDate) return new Date(order.orderDate).getTime();
+            return 0;
+        };
+        return getTimestamp(b) - getTimestamp(a);
+    });
 
 
     return (
@@ -380,6 +577,12 @@ export default function DashboardPage() {
                     <h3 className="text-xl font-bold text-gray-800 mb-1">
                         {order.productName}
                     </h3>
+                    {/* Badge ตรวจสอบแล้ว */}
+                    {order.isVerified && (
+                                                <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-semibold whitespace-nowrap">
+                                                    ✓ ตรวจสอบแล้ว
+                                                </span>
+                                            )}
                     {index === 0 && (
                         <span className="bg-yellow-200 text-yellow-800 text-xs px-2 py-1 rounded-full font-semibold whitespace-nowrap">
                             🔥 ล่าสุด
@@ -395,25 +598,46 @@ export default function DashboardPage() {
                                     {role === 'admin' && (
                                         <div className="flex gap-2">
                                             <button
-                                                onClick={() => startEdit(order)}
-                                                className="text-blue-500 hover:text-blue-700 transition"
-                                                title="แก้ไข"
+                                                onClick={() => verifyOrder(order)}
+                                                className="text-green-500 hover:text-green-700 transition"
+                                                title="ตรวจสอบ"
                                             >
                                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                 </svg>
                                             </button>
+                                        
                                             <button
-                                                onClick={() => deleteOrder(order.id)}
-                                                className="text-red-500 hover:text-red-700 transition"
-                                                title="ลบ"
+                                                onClick={() => unverifyOrder(order)}
+                                                className="text-orange-500 hover:text-orange-700 transition"
+                                                title="ยกเลิกการตรวจสอบ"
                                             >
                                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                 </svg>
                                             </button>
-                                        </div>
-                                    )}
+                                        
+                                        
+                                        <button
+                                            onClick={() => startEdit(order)}
+                                            className="text-blue-500 hover:text-blue-700 transition"
+                                            title="แก้ไข"
+                                        >
+                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                        </button>
+                                        <button
+                                            onClick={() => deleteOrder(order.id)}
+                                            className="text-red-500 hover:text-red-700 transition"
+                                            title="ลบ"
+                                        >
+                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                )}
                                 </div>
 
                                 <div className="space-y-3">
@@ -467,6 +691,23 @@ export default function DashboardPage() {
                                             </p>
                                         </div>
                                     )}
+
+                                    {/* ← เพิ่มส่วนนี้: แสดงข้อมูลผู้ตรวจสอบ */}
+                                    {order.isVerified && order.verifiedBy && (
+                                        <div className="pt-3 border-t border-green-200">
+                                            <div className="bg-green-50 p-3 rounded-lg border-l-4 border-green-500">
+                                                <p className="text-sm text-green-800">
+                                                    <span className="font-semibold">✓ ผู้ตรวจสอบ:</span> {order.verifiedBy}
+                                                </p>
+                                                {order.verifiedAt && (
+                                                    <p className="text-xs text-green-600 mt-1">
+                                                        ตรวจสอบเมื่อ: {formatThaiDateTimeFromISO(order.verifiedAt)}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
                                 </div>
                             </div>
                         ))}

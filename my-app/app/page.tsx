@@ -25,7 +25,7 @@ export default function Home (){
            document.cookie = Config.tokenKey + '=' + response.data.token;
            localStorage.setItem(Config.tokenKey, response.data.token);
 
-           if (response.data.role == 'admin'){
+           if (response.data.role === 'admin'){
             router.push('/printer/dashboard');
            }else{
             router.push('/printer/order');
