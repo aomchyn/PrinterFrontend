@@ -75,7 +75,9 @@ export default function OrderPage() {
                 }
                 
                 const data = await response.json();
-                
+                // ← เพิ่มบรรทัดนี้เพื่อดู field จริง
+        console.log('API field จริง:', JSON.stringify(data[0], null, 2));
+        
                 setProducts(data);
                 
             } catch (err: any) {
@@ -126,10 +128,11 @@ export default function OrderPage() {
                 numValue = parseInt(valueStr);
             }
             
-            if (isNaN(numValue)) {
-                 trimmedShelfLife;
-                return '';
-            }
+            // ← เพิ่ม: ถ้าค่าที่ได้ไม่ใช่ตัวเลข ให้ warning และ return ''
+        if (isNaN(numValue) || numValue <= 0) {
+            console.warn(`calculateExpiryDate: ไม่สามารถ parse "${shelfLife}" เป็นตัวเลขได้`);
+            return '';
+        }
 
 
             const newDate = new Date(mfgDate);
@@ -166,13 +169,15 @@ export default function OrderPage() {
 
         const product = products.find(p => p.id === code);
         
-        if (product) {
-            console.log(`พบสินค้า: ${product.name} (อายุ: ${product.exp})`);
+        
+    if (product) {
+        console.log('Product found:', product); // ← ดูว่า field ไหนคืออะไร
+
             setOrderData(prev => ({
                 ...prev,
                 productId: code,
-                productName: product.name,
-                productExp: product.exp,
+                productName: product.exp,
+                productExp: product.name,
                 expiryDate: calculateExpiryDate(prev.productionDate, product.exp),
             }));
         } else {
