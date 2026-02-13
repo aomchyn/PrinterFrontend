@@ -176,8 +176,8 @@ export default function OrderPage() {
             setOrderData(prev => ({
                 ...prev,
                 productId: code,
-                productName: product.exp,
-                productExp: product.name,
+                productName: product.name,
+                productExp: product.exp,
                 expiryDate: calculateExpiryDate(prev.productionDate, product.exp),
             }));
         } else {

@@ -63,6 +63,17 @@ export default function UserManagement(){
             return;
         }
     }
+
+    if (editingUser) {
+        if (isDuplicateName(name, editingUser.id)) {
+            Swal.fire({
+                icon: 'error',
+                title: 'ชื่อผู้ใช้ซ้ำ',
+                text: 'มีชื่อผู้ใช้นี้ในระบบแล้ว กรุณาใช้ชื่ออื่น'
+            });
+            return;
+        }
+    }
         try {
             const url = editingUser
             ?`${Config.apiUrl}/printer/user/admin-update-profile`

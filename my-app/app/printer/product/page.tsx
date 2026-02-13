@@ -155,7 +155,7 @@ export default function FgcodeManagement(){
 
     return (
         <div className="container mx-auto p-4">
-            <h1 className="text-2xl font-bold mb-5">
+            <h1 className="text-2xl font-bold color-black mb-5">
                 จัดการรหัสสินค้า
             </h1>
             <div className="flex justify-between items-center mb-6">
