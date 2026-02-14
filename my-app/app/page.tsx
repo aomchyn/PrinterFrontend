@@ -5,6 +5,7 @@ import { Config } from "./Config";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import Swal from "sweetalert2";
+import Cookies from 'js-cookie';
 
 export default function Home (){
   const [ name , setName] = useState('');
@@ -21,16 +22,25 @@ export default function Home (){
 
       const response = await axios.post(url,payload);
 
-      if (response.status === 200){
-           document.cookie = Config.tokenKey + '=' + response.data.token;
-           localStorage.setItem(Config.tokenKey, response.data.token);
+      const token = response.data.token;
+
+      // ✅ ลบ Cookie เดิมทุก path ก่อน (กันซ้ำ)
+      Cookies.remove(Config.tokenKey, { path: '/' });
+      Cookies.remove(Config.tokenKey, { path: '/printer' });
+
+      // ✅ ตั้ง Cookie ใหม่ (อายุ 7 วัน, path='/')
+      Cookies.set(Config.tokenKey, token, { expires: 7, path: '/' });
+
+      // ✅ เก็บ token ใน localStorage (ถ้าต้องการ)
+      localStorage.setItem(Config.tokenKey, token);
+
 
            if (response.data.role === 'admin'){
             router.push('/printer/dashboard');
            }else{
             router.push('/printer/order');
            }
-      }
+      
 
     } catch (error){
       Swal.fire({

@@ -5,7 +5,7 @@ import axios from "axios"
 import { useRouter } from "next/navigation"
 import Swal from "sweetalert2"
 import { Config } from "../Config"
-import Link from "next/link"
+import Cookies from 'js-cookie';
 
 export default function Sidebar(){
      
@@ -62,7 +62,9 @@ export default function Sidebar(){
             if(button.isConfirmed){
                 // ลบคุกกี้
                 document.cookie = `${Config.tokenKey}=; path=/: max-age=0`;
+                Cookies.remove(Config.tokenKey);
                 localStorage.removeItem(Config.tokenKey);
+                localStorage.removeItem('currentPath');
                 router.push('/');
             }
 
@@ -93,18 +95,15 @@ export default function Sidebar(){
         <div className="sidebar-container">
             <div className="sidebar-title">
                 <h1>
-                    <i className="fas fa-tree mr-3"></i>
-                    Printer OP
+                    <i className="fas fa-tree mr-3">Printer OP</i>
                 </h1>
                 <div className="text-lg font-normal mt-3 mb-4">
                     <i className="fas fa-user mr-3"></i>
                     {name} ({role})
                 </div>
-               <div className="flex gap-1 m-3 justify-center"> {role === 'admin' 
-               }
+               <div className="flex gap-1 m-3 justify-center"> 
                     <button className="btn-logout" onClick={handleLogout}>
-                        <i className="fas fa-sign-out-alt mr-2"></i>
-                        Logout
+                        <i className="fas fa-sign-out-alt mr-2">Logout</i>
                     </button>
                 </div>
             </div>
